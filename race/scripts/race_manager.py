@@ -199,7 +199,10 @@ def spawn(root,track,e,slot,env):
         ET.SubElement(plugin,name).text=value
     z=slot["road_z"]+float(e.get("spawn_z_offset_m",.04))
     # Keep relative mesh URIs relative to the original model directory.
-    with tempfile.NamedTemporaryFile(mode='w',suffix='.sdf',prefix='.urrc_',dir=Path(e['_model']).parent) as prepared:
+    # EntityFactory queues sdf_filename for later processing. Keep the file
+    # until the simulator has exited, including delayed mesh/resource loading.
+    with tempfile.NamedTemporaryFile(mode='w',suffix='.sdf',prefix='.urrc_',dir=Path(e['_model']).parent,delete=False) as prepared:
+        e['_prepared_model']=prepared.name
         prepared.write(ET.tostring(sdf,encoding='unicode'));prepared.flush()
         subprocess.run(["ros2","run","ros_gz_sim","create","--world",track,"--file",prepared.name,"--name",e["entry_id"],"--x",str(slot["x"]),"--y",str(slot["y"]),"--z",str(z),"-Y",str(slot["yaw"])],check=True,env=env,timeout=60)
 def remove(track,eid,env):
@@ -257,7 +260,7 @@ def entry_fingerprints(entries):
         h = hashlib.sha256()
         folder = Path(e['_folder'])
         for p in sorted(folder.rglob('*')):
-            if not p.is_file() or any(part in {'__pycache__','build','install','log'} for part in p.relative_to(folder).parts):
+            if not p.is_file() or p.name.startswith('.urrc_') or any(part in {'__pycache__','build','install','log'} for part in p.relative_to(folder).parts):
                 continue
             h.update(p.relative_to(folder).as_posix().encode()+b'\0'+p.read_bytes()+b'\0')
         result[e['entry_id']] = h.hexdigest()
@@ -446,6 +449,9 @@ def run_mode(root,mode,final_laps=None,start_mode=None):
         if bridge:stop(bridge)
         if server:stop(server)
         if log:log.close()
+        for e in entries:
+            if e.get('_prepared_model'):
+                Path(e['_prepared_model']).unlink(missing_ok=True)
 
 def main():
     p=argparse.ArgumentParser();p.add_argument("command",choices=("intake","validate","new-event","qualifying","final","status"));p.add_argument("--root",type=Path,default=Path(__file__).resolve().parents[2]);p.add_argument("--track");p.add_argument("--laps",type=int);p.add_argument("--start-mode",choices=("signal","camera"));a=p.parse_args();root=a.root.resolve()

@@ -43,6 +43,11 @@ def test_spawning_passes_gazebo_yaw_flag(tmp_path):
     assert '-Y' in args and '--yaw' not in args
     assert args[args.index('-Y')+1]=='1.25'
     assert run.call_args.kwargs['env']['GZ_PARTITION']=='test'
+    # Gazebo opens sdf_filename asynchronously after the create service reply.
+    prepared=Path(entry['_prepared_model'])
+    assert prepared.is_file()
+    assert 'gz-sim-pose-publisher-system' in prepared.read_text()
+    assert '/model/team01/urrc_timing' in prepared.read_text()
 
 
 def test_lens_control_rejects_boolean_failure():
