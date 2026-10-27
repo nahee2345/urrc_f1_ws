@@ -83,7 +83,28 @@ def run(args=None):
         log_dir = Path(env.get("XDG_STATE_HOME", str(Path.home() / ".local/state"))) / "urrc_f1"
         log_dir.mkdir(parents=True, exist_ok=True)
         (log_dir / "last_run.json").write_text(json.dumps({"track": name, "command": cmd}, indent=2) + "\n")
+
+        # First use on a new computer: generate local UV meshes and four cameras.
+        # No internet, fixed home path, or regenerated collision files required.
+        active = package / "worlds" / f"{name}_signal_active.sdf"
+        textured = package / "models" / f"urrc_{name}" / "meshes" / "road_textured.obj"
+        if (not active.is_file() or not textured.is_file()
+                or "urrc_v10_spectator" not in world.read_text(encoding="utf-8")):
+            import sys as _sys
+            _sys.path.insert(0, str(package))
+            from urrc_tracks.v10_assets import enhance_track
+            print("[URRC v10.8] Preparing map, five-light signal and spectator cameras",flush=True)
+            enhance_track(package,name)
+
         process = subprocess.Popen(cmd, env=env, start_new_session=True)
+        lights_process = None
+        lights_log = None
+        if not opts.no_lights and opts.iterations is None:
+            lights_log = (log_dir / "lights_v10.log").open("w")
+            lights_process = subprocess.Popen(
+                [sys.executable,str(package/"scripts"/"traffic_lights_v10.py"),
+                 "--track",name],env=env,stdout=lights_log,
+                stderr=subprocess.STDOUT,start_new_session=True)
         def stop(signum, frame):
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGINT)
@@ -91,6 +112,15 @@ def run(args=None):
         try:
             return process.wait()
         finally:
+            if lights_process is not None and lights_process.poll() is None:
+                try: os.killpg(lights_process.pid, signal.SIGTERM)
+                except ProcessLookupError: pass
+                try: lights_process.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    os.killpg(lights_process.pid, signal.SIGKILL)
+                    lights_process.wait()
+            if lights_log is not None:
+                lights_log.close()
             signal.signal(signal.SIGINT, old_int); signal.signal(signal.SIGTERM, old_term)
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGTERM)

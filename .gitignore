@@ -17,3 +17,11 @@ __pycache__/
 !/race/entrants/.gitkeep
 /race/results/*
 !/race/results/.gitkeep
+
+# v10.8 first-run locally generated meshes/materials and textures
+src/urrc_track_gazebo/assets/*.png
+src/urrc_track_gazebo/models/urrc_*/meshes/road_textured.obj
+src/urrc_track_gazebo/models/urrc_*/meshes/asphalt_ground.obj
+src/urrc_track_gazebo/models/urrc_*/meshes/road_asphalt.mtl
+src/urrc_track_gazebo/models/urrc_*/meshes/asphalt.png
+src/urrc_track_gazebo/models/urrc_*/meshes/offroad.png

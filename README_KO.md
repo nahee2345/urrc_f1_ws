@@ -117,3 +117,47 @@ python3 -m pytest race -q
 ```
 
 계측 구현 근거: [Gazebo Harmonic PosePublisher](https://gazebosim.org/api/sim/8/classgz_1_1sim_1_1systems_1_1PosePublisher.html). 차량별 모델/링크의 같은 시각 변환을 합성합니다. 일반 SceneBroadcaster 포즈를 base_link 계측으로 사용하지 않습니다.
+
+
+---
+
+## URRC v10.8: six-track venue, five-red start and U/I/O/P cameras
+
+This repository includes the v10.8 local venue workflow. These commands are
+for Ubuntu with Gazebo Sim Harmonic / ROS 2 Jazzy, not Windows native Gazebo.
+
+```bash
+git pull --ff-only origin main
+bash test_v10.sh
+bash run_v10.sh monaco
+```
+
+The first run of each track generates the textured visual road OBJ, asphalt
+assets, start gantry overlay model, and four Gazebo spectator camera sensors
+**from the existing versioned track files**. No absolute machine-specific
+paths or new large tracked road meshes are required. Original collision meshes
+and centerline data are not altered. The generated SDF/model visuals may show
+up as local changes in `git status`; do not commit generated artifacts.
+
+In a second terminal:
+```bash
+bash watch_v10.sh monaco
+```
+
+Use the spectator terminal keyboard: U = start/finish, I = entire circuit,
+O and P = zoomed course sectors, Q = quit. Keys 1-0 are reserved for
+future car-follow cameras. The original competition race scripts are separate;
+the v10.8 venue runner intentionally launches **no vehicles**.
+
+Five red lights illuminate one by one after the Gazebo world + start/overview
+camera topics are advertised. Each run picks new random timing (first on to
+lights out aims for >3s and <6s). All five lit overlays disappear through a
+single model-remove request. The service response and timing are logged in
+`${XDG_STATE_HOME:-$HOME/.local/state}/urrc_f1/lights_v10.log`.
+Physical GUI/frame synchronization and camera composition depend on the target
+GPU/Gazebo version and require local visual verification.
+
+Optional complete six-track source validation and asset generation:
+```bash
+python3 src/urrc_track_gazebo/scripts/check_v10.py --prepare-all
+```
