@@ -60,9 +60,17 @@ def compatibility_args(args:list[str],available:tuple[str,...])->list[str]:
     return out
 
 def route(root:Path,args:list[str])->list[str]:
-    if not args:raise ValueError('사용법: bash race_v24.sh preview|rehearse|compatibility|check|sync|prepare|vehicles|results [옵션]')
+    if not args:raise ValueError('사용법: bash race_v24.sh preview|rehearse|compatibility|check|sync|prepare|vehicles|results|standings|monitor [옵션]')
     mode,available=load_profile(root)
     verb=args[0];extra=args[1:]
+    if verb in {'standings','rank','monitor'}:
+        if mode != 'official':
+            raise ValueError('순위 명령은 공식 대회 환경에서만 사용할 수 있습니다')
+        if verb == 'monitor':
+            return ['python3', str(root/'race/scripts/race_monitor_v6.py'),
+                    *extra, '--root', str(root)]
+        return ['python3', str(root/'race/scripts/standings_v24.py'),
+                *extra, '--root', str(root)]
     if verb=='compatibility':
         return ['python3',str(root/'race/scripts/compatibility_v23.py'),
                 '--root',str(root),*compatibility_args(extra,available)]
