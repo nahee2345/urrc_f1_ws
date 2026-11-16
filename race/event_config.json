@@ -1,10 +1,10 @@
 {
   "track_pool": [
     "monza",
-    "spa",
-    "monaco",
-    "cota",
     "hungaroring",
+    "monaco",
+    "spa",
+    "cota",
     "baku"
   ],
   "qualifying_laps": 2,

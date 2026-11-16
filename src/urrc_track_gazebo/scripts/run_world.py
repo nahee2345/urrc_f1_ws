@@ -88,8 +88,7 @@ def run(args=None):
         # No internet, fixed home path, or regenerated collision files required.
         active = package / "worlds" / f"{name}_signal_active.sdf"
         textured = package / "models" / f"urrc_{name}" / "meshes" / "road_textured.obj"
-        if (not active.is_file() or not textured.is_file()
-                or "urrc_v10_spectator" not in world.read_text(encoding="utf-8")):
+        if not active.is_file() or not textured.is_file():
             import sys as _sys
             _sys.path.insert(0, str(package))
             from urrc_tracks.v10_assets import enhance_track
